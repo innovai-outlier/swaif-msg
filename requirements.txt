@@ -1,0 +1,115 @@
+# ============================================
+# SWAIF-MSG Requirements
+# ============================================
+# Projeto: Sistema de Análise Inteligente de Conversas WhatsApp
+# Versão: 0.1.0 (Alpha)
+# Última atualização: 2024-01-14
+# ============================================
+
+# ============================================
+# CORE DEPENDENCIES (Ambos Surface e Depths)
+# ============================================
+
+# Database
+# sqlite3 é built-in no Python (não precisa instalar)
+sqlite-utils==3.29    # CLI para SQLite
+
+# Utils
+python-dotenv==0.21.1    # Variáveis de ambiente
+PyYAML==6.0.1           # Configurações YAML (wheel pré-compilado)
+click==8.1.7            # CLI interface
+
+# ============================================
+# DEPTHS LAYER - Processamento Local
+# ============================================
+
+# File Monitoring
+watchdog==3.0.0        # Monitor de arquivos
+
+# Data Processing
+pandas==2.2.0          # Análise de dados (para L2) 
+numpy>=1.26.3,<2.3.0   # Computação numérica (compatível com OpenCV)
+
+# Testing (TDD)
+pytest==7.4.4          # Framework de testes
+pytest-cov==4.0.0      # Coverage de testes
+pytest-mock==3.12.0    # Mocking para testes
+
+# API Development (futuro FastAPI endpoint)
+# fastapi==0.108.0     # Descomentar quando implementar API
+# uvicorn==0.25.0      # Descomentar quando implementar API
+
+# ============================================
+# L3 - IA LAYER (adicionar conforme implementação)
+# ============================================
+
+# OpenAI Integration (quando implementar L3)
+# openai==1.6.1        # OpenAI API
+# langchain==0.1.0     # Framework LLM (opcional)
+
+# AutoGen (quando implementar agentes)
+# pyautogen==0.2.0     # Microsoft AutoGen
+
+# Local Models (quando implementar GPT-OSS)
+# transformers==4.36.0  # Hugging Face Transformers
+# torch==2.1.0         # PyTorch para modelos locais
+# accelerate==0.25.0   # Aceleração GPU
+
+# ============================================
+# SURFACE LAYER - Docker Services
+# ============================================
+
+# N8N/Evolution API não precisam de deps Python
+# pois rodam em containers separados
+
+# Streamlit Dashboard (quando implementar)
+# streamlit==1.29.0    # Dashboard web
+# plotly==5.18.0       # Gráficos interativos
+# altair==5.2.0        # Visualizações
+
+# ============================================
+# DEVELOPMENT TOOLS
+# ============================================
+
+# Code Quality
+black==23.12.1         # Formatador de código
+flake8==6.1.0          # Linter
+mypy==1.8.0            # Type checking
+pre-commit==3.6.0      # Git hooks
+
+# Documentation
+# sphinx==7.2.6        # Descomentar para documentação
+# mkdocs==1.5.3        # Alternativa ao Sphinx
+
+# ============================================
+# MONITORING & LOGGING (Produção)
+# ============================================
+
+# loguru==0.7.2        # Logging avançado (opcional)
+# sentry-sdk==1.39.1   # Error tracking (produção)
+
+# ============================================
+# SECURITY (Produção)
+# ============================================
+
+# cryptography==41.0.7  # Criptografia de dados sensíveis
+# python-jose==3.3.0    # JWT tokens (se usar API)
+
+# ============================================
+# NOTES & INSTALAÇÃO
+# ============================================
+# PROBLEMA COM PyYAML: Se der erro de compilação, use:
+# conda install pyyaml
+# 
+# INSTALAÇÃO RECOMENDADA:
+# 1. conda install pyyaml numpy pandas
+# 2. pip install -r requirements.txt
+#
+# OU instale as dependências problemáticas via conda primeiro:
+# conda install pyyaml numpy pandas watchdog
+# pip install --no-deps -r requirements.txt
+#
+# - Descomentar bibliotecas conforme necessidade  
+# - Atualizar versões periodicamente
+# - Para dev: pip install -r requirements.txt --upgrade
+# ============================================
