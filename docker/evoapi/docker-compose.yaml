@@ -1,0 +1,63 @@
+services:
+  swaif-evoapi:
+    container_name: swaif-evoapi
+    image: evoapicloud/evolution-api:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - swaif-evoapi-redis
+      - swaif-evoapi-postgres
+    networks:
+      - swaif-evoapi-net
+    expose:
+      - 8080
+
+  swaif-evoapi-redis:
+    image: redis:latest
+    networks:
+      - swaif-evoapi-net
+    container_name: swaif-evoapi-redis
+    command: >
+      redis-server --appendonly yes
+    volumes:
+      - swaif-evoapi_redis_data:/data
+
+  swaif-evoapi-postgres:
+    image: postgres:15
+    container_name: swaif-evoapi-postgres
+    restart: always
+    networks:
+      - swaif-evoapi-net
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=dmenescal
+      - POSTGRES_PASSWORD=C120915d
+      - POSTGRES_DB=swaif-evoapi_db
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    command: [
+      "postgres",
+      "-c", "max_connections=200",
+      "-c", "listen_addresses=*",
+      "-c", "shared_buffers=256MB",
+      "-c", "effective_cache_size=1GB",
+      "-c", "work_mem=4MB"
+    ]
+    volumes:
+      - swaif-evoapi_postgres_data:/var/lib/postgresql/data
+    expose:
+      - 5432
+
+volumes:
+  swaif-evoapi_instances:
+  swaif-evoapi_redis_data:
+  swaif-evoapi_postgres_data:
+
+
+networks:
+  swaif-evoapi-net:
+    name: swaif-evoapi-net
+    driver: bridge

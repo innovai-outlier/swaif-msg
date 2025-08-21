@@ -1,0 +1,173 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "718724e5-1051-4832-abb9-1e419fc98873",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -64
+      ],
+      "id": "050e44c6-3b09-4c22-868b-b11a84b0eda4",
+      "name": "WAB_MSG_Intercept",
+      "webhookId": "718724e5-1051-4832-abb9-1e419fc98873"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ab429003-39d1-46b9-b1a7-21cdfb2c920b",
+              "name": "host_n8n",
+              "value": "={{ $json.headers.host }}",
+              "type": "string"
+            },
+            {
+              "id": "c2f05b39-8773-4df0-8808-365a00a7fd3d",
+              "name": "evo_api_instance_name",
+              "value": "={{ $json.body.instance }}",
+              "type": "string"
+            },
+            {
+              "id": "9ec85b14-e2e5-4b8b-8c5a-2bf5ce7f1bee",
+              "name": "host_evoapi",
+              "value": "={{ $json.body.server_url }}",
+              "type": "string"
+            },
+            {
+              "id": "7514d2a0-04e9-4560-af57-2c6a7631df53",
+              "name": "sender_raw_data",
+              "value": "={{ $json.body.data.key.participant }}",
+              "type": "string"
+            },
+            {
+              "id": "b5107f40-21f8-4dbf-8c36-ba9dbb6fc771",
+              "name": "receiver_raw_data",
+              "value": "={{ $json.body.sender }}",
+              "type": "string"
+            },
+            {
+              "id": "96b8c029-089b-4e05-8ac5-84227fddc19f",
+              "name": "message_type",
+              "value": "={{ $json.body.data.messageType }}",
+              "type": "string"
+            },
+            {
+              "id": "a7fe3d3e-13eb-4be7-843b-5505947e886d",
+              "name": "sent_message",
+              "value": "={{ $json.body.data.message.conversation }}",
+              "type": "string"
+            },
+            {
+              "id": "10b5d7a0-c7c2-4025-8634-612a0c4eeb68",
+              "name": "timestamp",
+              "value": "={{ $json.body.date_time }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        112,
+        -64
+      ],
+      "id": "05e6545f-251e-4f17-9a03-0408433a1fd5",
+      "name": "Separate Fields",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{$env.N8N_USER_FOLDER}}/n8n_raw_data.json",
+        "options": {
+          "append": true
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        672,
+        -64
+      ],
+      "id": "3ae87e17-7445-4d06-915d-fa7f63df253d",
+      "name": "Save L1 Data",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "content": "## Whatsapp Business Interception Workflow \n### Generate Raw L1 Message Data for SWAIF Application \n",
+        "height": 304,
+        "width": 1408
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -384,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "1461425c-8f4f-40b8-bc2c-db9deb6761fd",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        432,
+        -64
+      ],
+      "id": "b75271b0-2f14-44b3-a5d9-64fb42c9f868",
+      "name": "Convert to File",
+      "alwaysOutputData": true
+    }
+  ],
+  "connections": {
+    "WAB_MSG_Intercept": {
+      "main": [
+        [
+          {
+            "node": "Separate Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separate Fields": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Save L1 Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "1d4c6afaeaeeed192152d9c2fb797862b4a44b5df0c8bfb281669c9a77ebf280"
+  }
+}
