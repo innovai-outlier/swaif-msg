@@ -45,9 +45,23 @@ class SwaifDatabase:
                     content TEXT,
                     timestamp DATETIME,
                     ingested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    processed BOOLEAN DEFAULT FALSE
+                    processed BOOLEAN DEFAULT FALSE,
+                    conversation_id TEXT REFERENCES conversations_l2(conversation_id)
                 )
             """)
+
+            existing_cols = [c[1] for c in conn.execute("PRAGMA table_info(messages_l1)")]
+            if "conversation_id" not in existing_cols:
+                conn.execute(
+                    "ALTER TABLE messages_l1 ADD COLUMN conversation_id TEXT REFERENCES conversations_l2(conversation_id)"
+                )
+
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_messages_l1_conversation_id
+                ON messages_l1(conversation_id)
+                """
+            )
             
             # L2 - Conversas agrupadas
             conn.execute("""
