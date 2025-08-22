@@ -23,8 +23,16 @@ class L1Ingestion:
     
     def read_json_file(self, filepath: str) -> List[Dict]:
         """Lê arquivo JSON do N8N"""
-        with open(filepath, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            logger.error(f"File not found: {filepath}")
+            return []
+        except json.JSONDecodeError as e:
+            msg = f"Invalid JSON in {filepath}: {e}"
+            logger.error(msg)
+            raise ValueError(msg) from e
     
     def process_l1_data(self, message_data: Dict) -> Dict:
         """Processa e armazena mensagem L1"""
