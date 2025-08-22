@@ -188,8 +188,10 @@ class L2Grouper:
     
     def _mark_messages_processed(self, message_ids: List[int]):
         """Marca mensagens L1 como processadas"""
+        if not message_ids:
+            return
         with sqlite3.connect(self.db.db_path) as conn:
-            placeholders = ','.join('?' * len(message_ids))
+            placeholders = ','.join(['?'] * len(message_ids))
             conn.execute(
                 f"UPDATE messages_l1 SET processed = TRUE WHERE id IN ({placeholders})",
                 message_ids

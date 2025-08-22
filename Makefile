@@ -1,14 +1,18 @@
 # SWAIF-MSG Makefile
-.PHONY: help install install-dev test run-depths clean update-deps
+.PHONY: help install install-dev test run-monitor run-pipe run-metrics run-display clean update-deps
 
 help:
-        @echo "SWAIF-MSG Commands:"
-        @echo "  make install      - Install package in editable mode and deps"
-        @echo "  make install-dev  - Install package with dev dependencies"
-        @echo "  make test        - Run tests (package must be installed)"
-        @echo "  make run-depths  - Start depths monitor"
-        @echo "  make clean       - Clean cache files"
-        @echo "  make update-deps - Update requirements.txt"
+	@echo "SWAIF-MSG Commands:"
+	@echo "  make install      - Install production dependencies"
+	@echo "  make install-dev  - Install all dependencies (including dev)"
+	@echo "  make test         - Run tests"
+	@echo "  make run-monitor  - Start depths monitor"
+	@echo "  make run-pipe     - Run depths pipeline"
+	@echo "  make run-metrics  - Generate metrics"
+	@echo "  make run-display  - Launch depths display"
+	@echo "  make clean        - Clean cache files"
+	@echo "  make update-deps  - Update requirements.txt"
+
 
 install:
         pip install -e .
