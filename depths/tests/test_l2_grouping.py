@@ -1,6 +1,5 @@
 #import pytest
 from datetime import datetime, timedelta
-from pathlib import Path
 from depths.core.database import SwaifDatabase
 from depths.layers.l2_grouper import L2Grouper
 
@@ -12,8 +11,6 @@ class TestL2Grouping:
         self.grouper = L2Grouper(self.db)
 
     def teardown_method(self):
-        db_path = self.db.db_path
-        self.db.cleanup()
         self.db.cleanup()
         
     def test_identify_conversation_id(self):
