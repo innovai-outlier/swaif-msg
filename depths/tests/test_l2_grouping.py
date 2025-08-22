@@ -109,8 +109,14 @@ class TestL2Grouping:
             sender="5511999887766@s.whatsapp.net",
             receiver="5511998681314@s.whatsapp.net"
         )
-        
+
         # Assert
         assert result["lead_phone"] == "5511999887766"
         assert result["secretary_phone"] == "5511998681314"
         assert result["sender_type"] == "lead"
+
+    def test_mark_messages_processed_empty(self):
+        """Test: Deve executar sem erro com lista vazia"""
+        self.grouper._mark_messages_processed([])
+        assert True
+
