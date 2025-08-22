@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
 import logging
+from dateutil.parser import parse as dateutil_parse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -119,12 +120,17 @@ class L2Grouper:
                 msg['receiver_phone']
             )
             
+            # Parse do timestamp para comparação
+            msg_time = msg['timestamp']
+            if isinstance(msg_time, str):
+                msg_time = dateutil_parse(msg_time)
+
             # Gerar ID da conversa
             conv_id = self.generate_conversation_id(
                 participants['lead_phone'],
-                msg['timestamp']
+                msg_time
             )
-            
+
             # Adicionar à conversa
             conv = conversations[conv_id]
             conv["conversation_id"] = conv_id
@@ -132,9 +138,8 @@ class L2Grouper:
             conv["secretary_phone"] = participants['secretary_phone']
             conv["messages"].append(dict(msg))
             conv["message_count"] += 1
-            
+
             # Atualizar timestamps
-            msg_time = msg['timestamp']
             if not conv["start_time"] or msg_time < conv["start_time"]:
                 conv["start_time"] = msg_time
             if not conv["end_time"] or msg_time > conv["end_time"]:
@@ -146,6 +151,14 @@ class L2Grouper:
         """Salva conversa L2 no banco"""
         try:
             with sqlite3.connect(self.db.db_path) as conn:
+                # Converter timestamps para string
+                start_time = conv_data["start_time"]
+                end_time = conv_data["end_time"]
+                if isinstance(start_time, datetime):
+                    start_time = start_time.isoformat()
+                if isinstance(end_time, datetime):
+                    end_time = end_time.isoformat()
+
                 # Verificar se conversa já existe
                 existing = conn.execute(
                     "SELECT id FROM conversations_l2 WHERE conversation_id = ?",
@@ -161,7 +174,7 @@ class L2Grouper:
                         WHERE conversation_id = ?
                     """, (
                         conv_data["message_count"],
-                        conv_data["end_time"],
+                        end_time,
                         conv_data["conversation_id"]
                     ))
                     return existing[0]
@@ -177,8 +190,8 @@ class L2Grouper:
                         conv_data["lead_phone"],
                         conv_data["secretary_phone"],
                         conv_data["message_count"],
-                        conv_data["start_time"],
-                        conv_data["end_time"]
+                        start_time,
+                        end_time
                     ))
                     return cursor.lastrowid
                     
