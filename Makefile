@@ -20,8 +20,17 @@ install-dev:
 test:
 	pytest depths/tests/ -v --cov=depths
 
-run-depths:
+run-monitor:
 	python depths/run_depths.py --monitor
+
+run-pipe:
+	python depths/run_depths.py --pipeline
+
+run-metrics:
+	python depths/run_depths.py --metrics
+
+run-display:
+	python depths/run_depths.py --display
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

@@ -28,7 +28,7 @@ O sistema processa as conversas em **3 camadas inteligentes**:
 
 1. **Formatação (L1)**: Captura e estrutura mensagens do WhatsApp
 2. **Agrupamento (L2)**: Organiza mensagens em conversas completas
-3. **Análise IA (L3)**: Gera resumos, extrai tarefas e classifica prioridades
+3. **Análise IA (L3)**: Gera resumos, extrai tarefas, monitora métricas da desempenho de conversas e classifica prioridades
 
 ## 💡 Filosofia
 
