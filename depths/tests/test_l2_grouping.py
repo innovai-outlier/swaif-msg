@@ -1,5 +1,6 @@
 #import pytest
 from datetime import datetime, timedelta
+from pathlib import Path
 from depths.core.database import SwaifDatabase
 from depths.layers.l2_grouper import L2Grouper
 
@@ -9,6 +10,11 @@ class TestL2Grouping:
         """Setup com banco in-memory para cada teste"""
         self.db = SwaifDatabase(":memory:")
         self.grouper = L2Grouper(self.db)
+
+    def teardown_method(self):
+        db_path = self.db.db_path
+        self.db.cleanup()
+        self.db.cleanup()
         
     def test_identify_conversation_id(self):
         """Test: Deve gerar ID único para conversa (lead + data)"""
