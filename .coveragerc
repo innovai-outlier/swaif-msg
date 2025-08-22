@@ -1,0 +1,4 @@
+[run]
+omit =
+    depths/core/terminal_display.py
+    depths/run_depths.py
