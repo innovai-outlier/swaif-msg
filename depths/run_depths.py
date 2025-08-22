@@ -8,6 +8,7 @@ import argparse
 import sys
 import time
 from pathlib import Path
+import logging
 
 # Add depths to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -16,23 +17,25 @@ from depths.layers.l1_ingestion import L1Ingestion
 from depths.layers.l2_grouper import L2Grouper
 from depths.core.terminal_display import TerminalDisplay
 
+logger = logging.getLogger(__name__)
+
 def process_l2_batch():
     """Processa L2 em batch"""
-    print("🔄 Processing L2 - Grouping conversations...")
+    logger.info("🔄 Processing L2 - Grouping conversations...")
     
     grouper = L2Grouper()
     conversations = grouper.process_pending_messages()
     
-    print(f"✅ Grouped into {len(conversations)} conversations")
+    logger.info(f"✅ Grouped into {len(conversations)} conversations")
     
     for conv in conversations:
-        print(f"  📱 {conv['conversation_id']}: {conv['message_count']} messages")
+        logger.info(f"  📱 {conv['conversation_id']}: {conv['message_count']} messages")
     
     return conversations
 
 def continuous_pipeline(interval=5):
     """Pipeline contínuo L1 -> L2"""
-    print("🚀 Starting continuous pipeline (L1 -> L2)...")
+    logger.info("🚀 Starting continuous pipeline (L1 -> L2)...")
     
     ingestion = L1Ingestion()
     grouper = L2Grouper()
@@ -53,25 +56,25 @@ def continuous_pipeline(interval=5):
                     ingestion.processed_files.add(file_path)
             
             if new_messages > 0:
-                print(f"📥 L1: Ingested {new_messages} new messages")
+                logger.info(f"📥 L1: Ingested {new_messages} new messages")
                 
                 # L2: Agrupar em conversas
                 conversations = grouper.process_pending_messages()
                 if conversations:
-                    print(f"🔗 L2: Created/updated {len(conversations)} conversations")
+                    logger.info(f"🔗 L2: Created/updated {len(conversations)} conversations")
             
             # Exibir métricas
-            print("\n" + "-"*30)
+            logger.info("\n" + "-"*30)
             display.show_all_metrics()
-            print("-"*30 + "\n")
+            logger.info("-"*30 + "\n")
             
             time.sleep(interval)
             
         except KeyboardInterrupt:
-            print("\n⏹️ Pipeline stopped")
+            logger.info("\n⏹️ Pipeline stopped")
             break
         except Exception as e:
-            print(f"❌ Error in pipeline: {e}")
+            logger.error(f"❌ Error in pipeline: {e}")
             time.sleep(interval)
 
 def main():
@@ -96,7 +99,7 @@ def main():
         process_l2_batch()
     
     elif args.monitor:
-        print("🚀 Starting L1 Monitor...")
+        logger.info("🚀 Starting L1 Monitor...")
         ingestion = L1Ingestion()
         ingestion.monitor_continuous()
     
@@ -106,19 +109,19 @@ def main():
     
     elif args.test:
         # Testar pipeline completo com json_test.json
-        print("🧪 Testing full pipeline...")
+        logger.info("🧪 Testing full pipeline...")
         
         # L1
         ingestion = L1Ingestion()
         test_data = ingestion.read_json_file("docker/n8n/data/json_test.json")
         for msg in test_data:
             result = ingestion.process_l1_data(msg)
-            print(f"L1 Processed: {result}")
+            logger.info(f"L1 Processed: {result}")
         
         # L2
         grouper = L2Grouper()
         conversations = grouper.process_pending_messages()
-        print(f"L2 Grouped: {len(conversations)} conversations")
+        logger.info(f"L2 Grouped: {len(conversations)} conversations")
     
     else:
         parser.print_help()
