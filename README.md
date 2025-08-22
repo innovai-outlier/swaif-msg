@@ -70,4 +70,23 @@ Funcionalidades implementadas:
 
 ---
 
+## 🔧 Desenvolvimento
+
+Instale o pacote em modo editável e execute os testes:
+
+```bash
+pip install -e .
+pip install -r requirements.txt
+pytest
+```
+
+Ou utilizando o Makefile:
+
+```bash
+make install
+make test
+```
+
+---
+
 *SWAIF-MSG - Transformando conversas em insights, liberando tempo para o cuidado humano.*

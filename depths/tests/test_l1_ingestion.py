@@ -1,14 +1,8 @@
-#import pytest
+import pytest
 import json
 import tempfile
 from pathlib import Path
 #from datetime import datetime
-import sys
-import os
-
-# Add project root to sys.path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.insert(0, project_root)
 
 # Sample data do seu json_test.json
 SAMPLE_L1_JSON = [{
@@ -42,6 +36,28 @@ class TestL1Ingestion:
         
         # Cleanup
         Path(temp_path).unlink()
+
+    def test_read_json_file_missing(self):
+        """Test: Deve retornar lista vazia para arquivo inexistente"""
+        from depths.layers.l1_ingestion import L1Ingestion
+
+        ingestion = L1Ingestion()
+        data = ingestion.read_json_file("arquivo_que_nao_existe.json")
+        assert data == []
+
+    def test_read_json_file_malformed(self):
+        """Test: Deve relançar erro para JSON malformado"""
+        from depths.layers.l1_ingestion import L1Ingestion
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            f.write("{invalid json}")
+            temp_path = f.name
+
+        ingestion = L1Ingestion()
+        with pytest.raises(ValueError):
+            ingestion.read_json_file(temp_path)
+
+        Path(temp_path).unlink()
     
     def test_store_l1_to_database(self):
         """Test: Deve armazenar L1 no SQLite"""
@@ -74,9 +90,9 @@ class TestL1Ingestion:
             # Act - criar arquivo após iniciar monitor
             test_file = Path(tmpdir) / "test_msg.json"
             test_file.write_text(json.dumps(SAMPLE_L1_JSON))
-            
+
             detected_files = ingestion.scan_folder(tmpdir)
-            
+
             # Assert
             assert len(detected_files) == 1
             assert "test_msg.json" in str(detected_files[0])

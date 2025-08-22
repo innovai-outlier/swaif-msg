@@ -7,6 +7,8 @@ import {
   WAReadReceiptsValue,
 } from 'baileys';
 
+import { MediaType } from './sendMessage.dto';
+
 export class OnWhatsAppDto {
   constructor(
     public readonly jid: string,
@@ -120,7 +122,11 @@ export class SendPresenceDto extends Metadata {
 export class UpdateMessageDto extends Metadata {
   number: string;
   key: proto.IMessageKey;
-  text: string;
+  text?: string;
+  media?: string;
+  mediatype?: MediaType;
+  mimetype?: string;
+  fileName?: string;
 }
 
 export class BlockUserDto {

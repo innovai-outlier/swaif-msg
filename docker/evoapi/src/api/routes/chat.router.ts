@@ -38,12 +38,14 @@ import {
   whatsappNumberSchema,
 } from '@validate/validate.schema';
 import { RequestHandler, Router } from 'express';
+import multer from 'multer';
 
 import { HttpStatus } from './index.router';
 
 export class ChatRouter extends RouterBroker {
   constructor(...guards: RequestHandler[]) {
     super();
+    const upload = multer({ storage: multer.memoryStorage() });
     this.router
       .post(this.routerPath('whatsappNumbers'), ...guards, async (req, res) => {
         try {
@@ -120,8 +122,22 @@ export class ChatRouter extends RouterBroker {
 
         return res.status(HttpStatus.CREATED).json(response);
       })
-      // TODO: corrigir updateMessage para medias tambem
-      .post(this.routerPath('updateMessage'), ...guards, async (req, res) => {
+      // update message with optional media support
+      .post(this.routerPath('updateMessage'), ...guards, upload.single('file'), async (req, res) => {
+        const bodyData = req.body;
+
+        if (typeof bodyData.key === 'string') {
+          try {
+            bodyData.key = JSON.parse(bodyData.key);
+          } catch (error) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid key format' });
+          }
+        }
+
+        if (req.file) {
+          bodyData.media = req.file.buffer.toString('base64');
+        }
+
         const response = await this.dataValidate<UpdateMessageDto>({
           request: req,
           schema: updateMessageSchema,
