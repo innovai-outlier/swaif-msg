@@ -2,20 +2,22 @@
 .PHONY: help install install-dev test run-depths clean update-deps
 
 help:
-	@echo "SWAIF-MSG Commands:"
-	@echo "  make install      - Install production dependencies"
-	@echo "  make install-dev  - Install all dependencies (including dev)"
-	@echo "  make test        - Run tests"
-	@echo "  make run-depths  - Start depths monitor"
-	@echo "  make clean       - Clean cache files"
-	@echo "  make update-deps - Update requirements.txt"
+        @echo "SWAIF-MSG Commands:"
+        @echo "  make install      - Install package in editable mode and deps"
+        @echo "  make install-dev  - Install package with dev dependencies"
+        @echo "  make test        - Run tests (package must be installed)"
+        @echo "  make run-depths  - Start depths monitor"
+        @echo "  make clean       - Clean cache files"
+        @echo "  make update-deps - Update requirements.txt"
 
 install:
-	pip install -r requirements.txt
+        pip install -e .
+        pip install -r requirements.txt
 
 install-dev:
-	pip install -r requirements.txt
-	pip install black flake8 mypy pre-commit
+        pip install -e .
+        pip install -r requirements.txt
+        pip install black flake8 mypy pre-commit
 
 test:
 	pytest depths/tests/ -v --cov=depths
