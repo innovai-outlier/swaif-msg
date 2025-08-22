@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from collections import defaultdict
 import logging
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class L2Grouper:
     """Agrupa mensagens L1 em conversas L2"""
 
-    def __init__(self, database=None, secretary_phone: str = "clinic_secretary"):
+    def __init__(self, database=None, tolerance_hours: int = 4, secretary_phone: str = "clinic_secretary"):
         if database:
             self.db = database
         else:
@@ -19,29 +19,45 @@ class L2Grouper:
             self.db = SwaifDatabase()
 
         self.secretary_phone = self._clean_phone(secretary_phone)
+        self.tolerance = timedelta(hours=tolerance_hours)
     
     def generate_conversation_id(self, lead_phone: str, timestamp: str) -> str:
-        """Gera ID único: lead_phone + data"""
-        # Parse timestamp para extrair data
+        """Gera ID considerando janela de tolerância"""
         if isinstance(timestamp, str):
             # Usar python-dateutil que é mais robusto e compatível
             try:
-                from dateutil.parser import parse as dateutil_parse
                 dt = dateutil_parse(timestamp)
             except ImportError:
-                # Fallback manual para formato ISO comum
-                # Remove 'Z' e microsegundos se existir
                 clean_timestamp = timestamp.replace('Z', '').split('.')[0]
                 dt = datetime.strptime(clean_timestamp, '%Y-%m-%dT%H:%M:%S')
         else:
             dt = timestamp
-            
-        date_str = dt.strftime('%Y-%m-%d')
-        
-        # Limpar número do telefone
+
         clean_phone = lead_phone.replace('@s.whatsapp.net', '').strip()
-        
-        return f"{clean_phone}_{date_str}"
+
+        with sqlite3.connect(self.db.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT last_activity, conversation_id FROM lead_activity WHERE lead_phone = ?",
+                (clean_phone,),
+            ).fetchone()
+
+            if row:
+                last_activity = dateutil_parse(row["last_activity"])
+                if dt - last_activity <= self.tolerance:
+                    conversation_id = row["conversation_id"]
+                else:
+                    conversation_id = f"{clean_phone}_{dt.strftime('%Y-%m-%d')}"
+            else:
+                conversation_id = f"{clean_phone}_{dt.strftime('%Y-%m-%d')}"
+
+            conn.execute(
+                "INSERT OR REPLACE INTO lead_activity (lead_phone, last_activity, conversation_id) VALUES (?, ?, ?)",
+                (clean_phone, dt.isoformat(), conversation_id),
+            )
+            conn.commit()
+
+        return conversation_id
     
     def identify_participants(self, sender: Optional[str], receiver: str) -> Dict:
         """Identifica lead e secretária na conversa"""
@@ -150,7 +166,7 @@ class L2Grouper:
         return conversations
     
     def _save_conversation(self, conv_data: Dict) -> Optional[int]:
-        """Salva conversa L2 no banco"""
+        """Salva conversa L2 no banco e armazena histórico de mensagens"""
         try:
             with sqlite3.connect(self.db.db_path) as conn:
                 # Converter timestamps para string
@@ -164,43 +180,73 @@ class L2Grouper:
                 # Verificar se conversa já existe
                 existing = conn.execute(
                     "SELECT id FROM conversations_l2 WHERE conversation_id = ?",
-                    (conv_data["conversation_id"],)
+                    (conv_data["conversation_id"],),
                 ).fetchone()
-                
+
                 if existing:
                     # Atualizar conversa existente
-                    conn.execute("""
-                        UPDATE conversations_l2 
+                    conn.execute(
+                        """
+                        UPDATE conversations_l2
                         SET message_count = message_count + ?,
                             end_time = ?
                         WHERE conversation_id = ?
-                    """, (
-                        conv_data["message_count"],
-                        end_time,
-                        conv_data["conversation_id"]
-                    ))
-                    return existing[0]
+                        """,
+                        (
+                            conv_data["message_count"],
+                            end_time,
+                            conv_data["conversation_id"],
+                        ),
+                    )
+                    conv_row_id = existing[0]
                 else:
                     # Inserir nova conversa
-                    cursor = conn.execute("""
-                        INSERT INTO conversations_l2 
-                        (conversation_id, lead_phone, secretary_phone, 
+                    cursor = conn.execute(
+                        """
+                        INSERT INTO conversations_l2
+                        (conversation_id, lead_phone, secretary_phone,
                          message_count, start_time, end_time)
                         VALUES (?, ?, ?, ?, ?, ?)
-                    """, (
-                        conv_data["conversation_id"],
-                        conv_data["lead_phone"],
-                        conv_data["secretary_phone"],
-                        conv_data["message_count"],
-                        start_time,
-                        end_time
-                    ))
-                    return cursor.lastrowid
-                    
+                        """,
+                        (
+                            conv_data["conversation_id"],
+                            conv_data["lead_phone"],
+                            conv_data["secretary_phone"],
+                            conv_data["message_count"],
+                            start_time,
+                            end_time,
+                        ),
+                    )
+                    conv_row_id = cursor.lastrowid
+
+                for msg in conv_data.get("messages", []):
+                    participants = self.identify_participants(
+                        msg.get("sender_phone"),
+                        msg.get("receiver_phone"),
+                    )
+                    msg_time = msg.get("timestamp")
+                    if isinstance(msg_time, datetime):
+                        msg_time = msg_time.isoformat()
+                    conn.execute(
+                        """
+                        INSERT INTO conversation_messages
+                        (conversation_id, sender_type, content, timestamp)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        (
+                            conv_data["conversation_id"],
+                            participants["sender_type"],
+                            msg.get("content"),
+                            msg_time,
+                        ),
+                    )
+
+                return conv_row_id
+
         except Exception as e:
             logger.error(f"Error saving conversation: {e}")
             return None
-    
+
     def _mark_messages_processed(self, message_ids: List[int]):
         """Marca mensagens L1 como processadas"""
         if not message_ids:

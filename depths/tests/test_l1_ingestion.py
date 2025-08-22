@@ -96,3 +96,55 @@ class TestL1Ingestion:
             # Assert
             assert len(detected_files) == 1
             assert "test_msg.json" in str(detected_files[0])
+
+    def test_process_l1_data_error(self, monkeypatch):
+        """Test: Deve retornar erro quando falhar ao armazenar L1"""
+        from depths.layers.l1_ingestion import L1Ingestion
+        from depths.core.database import SwaifDatabase
+
+        db = SwaifDatabase(":memory:")
+        ingestion = L1Ingestion(database=db)
+
+        def fail_insert(_):
+            raise Exception("fail")
+
+        monkeypatch.setattr(ingestion.db, "insert_l1_message", fail_insert)
+        result = ingestion.process_l1_data(SAMPLE_L1_JSON[0])
+        assert result["status"] == "error"
+        assert "fail" in result["error"]
+
+    def test_monitor_continuous_keyboard_interrupt(self, monkeypatch):
+        """Test: Deve encerrar loop quando ocorrer KeyboardInterrupt"""
+        from depths.layers import l1_ingestion
+
+        ingestion = l1_ingestion.L1Ingestion()
+        monkeypatch.setattr(ingestion, "scan_folder", lambda: [Path("msg.json")])
+        monkeypatch.setattr(ingestion, "read_json_file", lambda path: SAMPLE_L1_JSON)
+        processed = []
+        monkeypatch.setattr(ingestion, "process_l1_data", lambda msg: processed.append(msg))
+
+        def raise_keyboard(*_, **__):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr(l1_ingestion.time, "sleep", raise_keyboard)
+        ingestion.monitor_continuous(interval=0)
+        assert processed
+
+    def test_monitor_continuous_exception(self, monkeypatch):
+        """Test: Deve capturar exceções genéricas e continuar"""
+        from depths.layers import l1_ingestion
+
+        ingestion = l1_ingestion.L1Ingestion()
+
+        def fail_scan():
+            raise ValueError("boom")
+
+        monkeypatch.setattr(ingestion, "scan_folder", fail_scan)
+
+        def raise_keyboard(*_, **__):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr(l1_ingestion.time, "sleep", raise_keyboard)
+
+        with pytest.raises(KeyboardInterrupt):
+            ingestion.monitor_continuous(interval=0)
