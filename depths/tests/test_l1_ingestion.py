@@ -51,17 +51,19 @@ class TestL1Ingestion:
         
         db = SwaifDatabase(":memory:")  # In-memory for tests
         ingestion = L1Ingestion(database=db)
-        
+        db_path = db.db_path
+
         try:
             # Act
             result = ingestion.process_l1_data(SAMPLE_L1_JSON[0])
-            
-            # Assert  
+
+            # Assert
             assert result["status"] == "stored"
             assert result["message_id"] is not None
         finally:
             # Cleanup
             db.cleanup()
+            assert not Path(db_path).exists()
         
     def test_monitor_folder(self):
         """Test: Deve detectar novos arquivos JSON"""

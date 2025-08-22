@@ -15,6 +15,7 @@ class SwaifDatabase:
             import os
             fd, self.db_path = tempfile.mkstemp(suffix='.db')
             os.close(fd)  # Fechar o file descriptor, usar apenas o path
+            self._temp_db = True
         else:
             self.db_path = Path(db_path)
             self.db_path.parent.mkdir(exist_ok=True)
@@ -22,7 +23,7 @@ class SwaifDatabase:
     
     def cleanup(self):
         """Remove arquivo temporário (para testes)"""
-        if hasattr(self, '_temp_db') and isinstance(self.db_path, str) and self.db_path.endswith('.db'):
+        if getattr(self, "_temp_db", False):
             import os
             try:
                 os.unlink(self.db_path)
