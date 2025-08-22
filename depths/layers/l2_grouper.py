@@ -148,7 +148,7 @@ class L2Grouper:
         return conversations
     
     def _save_conversation(self, conv_data: Dict) -> Optional[int]:
-        """Salva conversa L2 no banco"""
+        """Salva conversa L2 no banco e armazena histórico de mensagens"""
         try:
             with sqlite3.connect(self.db.db_path) as conn:
                 # Converter timestamps para string
@@ -162,43 +162,73 @@ class L2Grouper:
                 # Verificar se conversa já existe
                 existing = conn.execute(
                     "SELECT id FROM conversations_l2 WHERE conversation_id = ?",
-                    (conv_data["conversation_id"],)
+                    (conv_data["conversation_id"],),
                 ).fetchone()
-                
+
                 if existing:
                     # Atualizar conversa existente
-                    conn.execute("""
-                        UPDATE conversations_l2 
+                    conn.execute(
+                        """
+                        UPDATE conversations_l2
                         SET message_count = message_count + ?,
                             end_time = ?
                         WHERE conversation_id = ?
-                    """, (
-                        conv_data["message_count"],
-                        end_time,
-                        conv_data["conversation_id"]
-                    ))
-                    return existing[0]
+                        """,
+                        (
+                            conv_data["message_count"],
+                            end_time,
+                            conv_data["conversation_id"],
+                        ),
+                    )
+                    conv_row_id = existing[0]
                 else:
                     # Inserir nova conversa
-                    cursor = conn.execute("""
-                        INSERT INTO conversations_l2 
-                        (conversation_id, lead_phone, secretary_phone, 
+                    cursor = conn.execute(
+                        """
+                        INSERT INTO conversations_l2
+                        (conversation_id, lead_phone, secretary_phone,
                          message_count, start_time, end_time)
                         VALUES (?, ?, ?, ?, ?, ?)
-                    """, (
-                        conv_data["conversation_id"],
-                        conv_data["lead_phone"],
-                        conv_data["secretary_phone"],
-                        conv_data["message_count"],
-                        start_time,
-                        end_time
-                    ))
-                    return cursor.lastrowid
-                    
+                        """,
+                        (
+                            conv_data["conversation_id"],
+                            conv_data["lead_phone"],
+                            conv_data["secretary_phone"],
+                            conv_data["message_count"],
+                            start_time,
+                            end_time,
+                        ),
+                    )
+                    conv_row_id = cursor.lastrowid
+
+                for msg in conv_data.get("messages", []):
+                    participants = self.identify_participants(
+                        msg.get("sender_phone"),
+                        msg.get("receiver_phone"),
+                    )
+                    msg_time = msg.get("timestamp")
+                    if isinstance(msg_time, datetime):
+                        msg_time = msg_time.isoformat()
+                    conn.execute(
+                        """
+                        INSERT INTO conversation_messages
+                        (conversation_id, sender_type, content, timestamp)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        (
+                            conv_data["conversation_id"],
+                            participants["sender_type"],
+                            msg.get("content"),
+                            msg_time,
+                        ),
+                    )
+
+                return conv_row_id
+
         except Exception as e:
             logger.error(f"Error saving conversation: {e}")
             return None
-    
+
     def _mark_messages_processed(self, message_ids: List[int]):
         """Marca mensagens L1 como processadas"""
         if not message_ids:

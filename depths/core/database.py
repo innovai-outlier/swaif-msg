@@ -1,6 +1,6 @@
 import sqlite3
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 class SwaifDatabase:
     """SQLite handler para as 3 camadas"""
@@ -49,7 +49,7 @@ class SwaifDatabase:
                     processed BOOLEAN DEFAULT FALSE
                 )
             """)
-            
+
             # L2 - Conversas agrupadas
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS conversations_l2 (
@@ -63,7 +63,20 @@ class SwaifDatabase:
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            
+
+            # Histórico das mensagens por conversa
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS conversation_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    conversation_id TEXT,
+                    sender_type TEXT,
+                    content TEXT,
+                    timestamp DATETIME,
+                    FOREIGN KEY (conversation_id)
+                        REFERENCES conversations_l2(conversation_id)
+                )
+            """)
+
             # L3 - Análises IA
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS analyses_l3 (
@@ -73,19 +86,19 @@ class SwaifDatabase:
                     criteria JSON,
                     tasks JSON,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (conversation_id) 
+                    FOREIGN KEY (conversation_id)
                         REFERENCES conversations_l2(conversation_id)
                 )
             """)
-            
+
             conn.commit()
     
     def insert_l1_message(self, data: Dict) -> int:
         """Insere mensagem L1 do N8N"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("""
-                INSERT INTO messages_l1 
-                (n8n_host, evo_instance, evo_host, sender_phone, 
+                INSERT INTO messages_l1
+                (n8n_host, evo_instance, evo_host, sender_phone,
                  receiver_phone, message_type, content, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
@@ -99,3 +112,18 @@ class SwaifDatabase:
                 data.get("timestamp")
             ))
             return cursor.lastrowid
+
+    def get_conversation_history(self, conversation_id: str) -> List[Dict]:
+        """Recupera o histórico de mensagens de uma conversa"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                """
+                SELECT sender_type, content, timestamp
+                FROM conversation_messages
+                WHERE conversation_id = ?
+                ORDER BY timestamp ASC
+                """,
+                (conversation_id,),
+            )
+            return [dict(row) for row in cursor.fetchall()]

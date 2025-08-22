@@ -74,6 +74,17 @@ class TestL2Grouping:
         assert conversations[0]["message_count"] == 3
         assert conversations[0]["lead_phone"] == "5511999887766"
 
+        # Histórico deve conter as mensagens salvas
+        history = self.db.get_conversation_history(conversations[0]["conversation_id"])
+        assert len(history) == 3
+        assert [m["content"] for m in history] == [
+            "Olá, gostaria de agendar",
+            "Para amanhã seria possível?",
+            "Sim, temos horário às 14h",
+        ]
+        assert history[0]["sender_type"] == "lead"
+        assert history[-1]["sender_type"] == "secretary"
+
     def test_separate_conversations_different_days(self):
         """Test: Deve separar conversas de dias diferentes"""
         # Arrange
