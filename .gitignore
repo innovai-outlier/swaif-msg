@@ -1,0 +1,13 @@
+# Data directory
+data/
+
+# Database files
+*.db
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.coverage

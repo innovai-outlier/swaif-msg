@@ -1,6 +1,9 @@
 from typing import Dict
 import sqlite3
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class TerminalDisplay:
     """Exibe métricas no terminal"""
@@ -24,22 +27,22 @@ class TerminalDisplay:
                 LIMIT 3
             """).fetchall()
             
-        print("\n" + "="*50)
-        print("📊 SWAIF-MSG L1 METRICS")
-        print("="*50)
-        print(f"Total messages: {total}")
-        print(f"Last update: {datetime.now().strftime('%H:%M:%S')}")
+        logger.info("\n" + "="*50)
+        logger.info("📊 SWAIF-MSG L1 METRICS")
+        logger.info("="*50)
+        logger.info(f"Total messages: {total}")
+        logger.info(f"Last update: {datetime.now().strftime('%H:%M:%S')}")
         
         if recent:
-            print("\n📱 Recent messages:")
+            logger.info("\n📱 Recent messages:")
             for i, (sender, receiver, content, ts) in enumerate(recent, 1):
-                print(f"  {i}. {sender or 'Unknown'} → {receiver}")
-                print(f"     💬 {content[:50]}...")
-                print(f"     ⏰ {ts}\n")
+                logger.info(f"  {i}. {sender or 'Unknown'} → {receiver}")
+                logger.info(f"     💬 {content[:50]}...")
+                logger.info(f"     ⏰ {ts}\n")
         
         if total > 3:
-            print(f"... and {total - 3} more messages")
-        print("="*50)
+            logger.info(f"... and {total - 3} more messages")
+        logger.info("="*50)
         
     def show_l2_metrics(self):
         """Mostra métricas L2 - Conversas"""
@@ -66,21 +69,21 @@ class TerminalDisplay:
                 LIMIT 3
             """).fetchall()
             
-        print("\n" + "="*50)
-        print("📊 SWAIF-MSG L2 METRICS - CONVERSATIONS")
-        print("="*50)
-        print(f"Total conversations: {total_conv}")
-        print(f"Conversations today: {today_conv}")
-        print(f"Last update: {datetime.now().strftime('%H:%M:%S')}")
+        logger.info("\n" + "="*50)
+        logger.info("📊 SWAIF-MSG L2 METRICS - CONVERSATIONS")
+        logger.info("="*50)
+        logger.info(f"Total conversations: {total_conv}")
+        logger.info(f"Conversations today: {today_conv}")
+        logger.info(f"Last update: {datetime.now().strftime('%H:%M:%S')}")
         
         if top_leads:
-            print("\n🏆 Top Leads (by message volume):")
+            logger.info("\n🏆 Top Leads (by message volume):")
             for i, (phone, convs, msgs) in enumerate(top_leads, 1):
-                print(f"  {i}. {phone}")
-                print(f"     📱 {convs} conversations")
-                print(f"     💬 {msgs} total messages\n")
-        
-        print("="*50)
+                logger.info(f"  {i}. {phone}")
+                logger.info(f"     📱 {convs} conversations")
+                logger.info(f"     💬 {msgs} total messages\n")
+
+        logger.info("="*50)
     
     def show_all_metrics(self):
         """Mostra todas as métricas (L1 + L2)"""

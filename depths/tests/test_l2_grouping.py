@@ -1,3 +1,6 @@
+#import pytest
+from datetime import datetime, timedelta
+from pathlib import Path
 from depths.core.database import SwaifDatabase
 from depths.layers.l2_grouper import L2Grouper
 
@@ -8,6 +11,11 @@ class TestL2Grouping:
         self.db = SwaifDatabase(":memory:")
         self.grouper = L2Grouper(self.db)
 
+    def teardown_method(self):
+        db_path = self.db.db_path
+        self.db.cleanup()
+        self.db.cleanup()
+        
     def test_identify_conversation_id(self):
         """Test: Deve gerar ID único para conversa (lead + data)"""
         # Arrange
@@ -120,3 +128,8 @@ class TestL2Grouping:
         assert result["lead_phone"] == "5511999887766"
         assert result["secretary_phone"] == "5511998681314"
         assert result["sender_type"] == "lead"
+
+    def test_mark_messages_processed_empty(self):
+        """Test: Deve executar sem erro com lista vazia"""
+        self.grouper._mark_messages_processed([])
+        assert True
