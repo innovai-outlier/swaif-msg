@@ -4,6 +4,7 @@
 
 * Add BaileysMessageProcessor for improved message handling and integrate rxjs for asynchronous processing
 * Enhance message processing with retry logic for error handling
+* Support editing messages with optional media content through `chat/updateMessage`
 
 ### Fixed
 
@@ -16,6 +17,7 @@
 * Simplify edited message check in BaileysStartupService
 * Avoid corrupting URLs with query strings
 * Removed CONFIG_SESSION_PHONE_VERSION environment variable
+* Validate `sendStatus` endpoint to require content or file and correctly parse recipient lists
 
 # 2.3.0 (2025-06-17 09:19)
 
