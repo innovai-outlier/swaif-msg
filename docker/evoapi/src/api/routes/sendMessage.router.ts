@@ -101,11 +101,27 @@ export class MessageRouter extends RouterBroker {
       .post(this.routerPath('sendStatus'), ...guards, upload.single('file'), async (req, res) => {
         const bodyData = req.body;
 
+        if (bodyData.statusJidList && typeof bodyData.statusJidList === 'string') {
+          try {
+            bodyData.statusJidList = JSON.parse(bodyData.statusJidList);
+          } catch {
+            bodyData.statusJidList = [bodyData.statusJidList];
+          }
+        }
+
+        if (typeof bodyData.allContacts === 'string') {
+          bodyData.allContacts = bodyData.allContacts === 'true';
+        }
+
+        if (!req.file && !bodyData.content) {
+          return res.status(HttpStatus.BAD_REQUEST).json({ error: 'content or file is required' });
+        }
+
         const response = await this.dataValidate<SendStatusDto>({
           request: req,
           schema: statusMessageSchema,
           ClassRef: SendStatusDto,
-          execute: (instance) => sendMessageController.sendStatus(instance, bodyData, req.file as any),
+          execute: (instance, data) => sendMessageController.sendStatus(instance, data, req.file as any),
         });
 
         return res.status(HttpStatus.CREATED).json(response);
