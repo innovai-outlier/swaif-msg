@@ -1,20 +1,20 @@
 import sqlite3
 from pathlib import Path
-from typing import Dict, List, Optional
-from datetime import datetime
-import json
+from typing import Dict
 
 class SwaifDatabase:
     """SQLite handler para as 3 camadas"""
     
     def __init__(self, db_path: str = "data/swaif_msg.db"):
+        self._temp_db = None
         if db_path == ":memory:":
             # Para testes, usar um arquivo temporário em vez de :memory:
             # pois :memory: não persiste entre conexões
             import tempfile
             import os
-            fd, self.db_path = tempfile.mkstemp(suffix='.db')
+            fd, self._temp_db = tempfile.mkstemp(suffix=".db")
             os.close(fd)  # Fechar o file descriptor, usar apenas o path
+            self.db_path = self._temp_db
         else:
             self.db_path = Path(db_path)
             self.db_path.parent.mkdir(exist_ok=True)
@@ -22,12 +22,8 @@ class SwaifDatabase:
     
     def cleanup(self):
         """Remove arquivo temporário (para testes)"""
-        if hasattr(self, '_temp_db') and isinstance(self.db_path, str) and self.db_path.endswith('.db'):
-            import os
-            try:
-                os.unlink(self.db_path)
-            except (FileNotFoundError, PermissionError):
-                pass
+        if self._temp_db:
+            Path(self._temp_db).unlink(missing_ok=True)
     
     def _init_tables(self):
         """Cria tabelas L1, L2, L3"""
