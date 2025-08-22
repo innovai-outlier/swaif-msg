@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from collections import defaultdict
 import logging
 from dateutil.parser import parse as dateutil_parse
+from depths.core import lead_memory
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -114,6 +115,9 @@ class L2Grouper:
             conv_id = self._save_conversation(conv_data)
             if conv_id:
                 saved_conversations.append(conv_data)
+                # Alimentar serviço de memória com conversa persistida
+                lead_memory.DB_PATH = self.db.db_path
+                lead_memory.save_conversation(conv_data["conversation_id"])
                 
         # Marcar mensagens como processadas
         self._mark_messages_processed([m['id'] for m in messages])
