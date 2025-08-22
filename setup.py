@@ -1,9 +1,11 @@
-#!/usr/bin/env python3
-"""
-Setup script para SWAIF-MSG
-Instala dependências e configura ambiente
-"""
+from setuptools import setup, find_packages
 
+setup(
+    name="swaif-msg",
+    version="0.1.0",
+    description="Sistema de Análise Inteligente de Conversas WhatsApp",
+    packages=find_packages(),
+)
 import subprocess
 import sys
 from pathlib import Path
