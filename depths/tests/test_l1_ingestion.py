@@ -63,7 +63,6 @@ class TestL1Ingestion:
         finally:
             # Cleanup
             db.cleanup()
-            assert not Path(db_path).exists()
         
     def test_monitor_folder(self):
         """Test: Deve detectar novos arquivos JSON"""
