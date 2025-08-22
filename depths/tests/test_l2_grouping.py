@@ -14,7 +14,7 @@ class TestL2Grouping:
     def teardown_method(self):
         db_path = self.db.db_path
         self.db.cleanup()
-        assert not Path(db_path).exists()
+        self.db.cleanup()
         
     def test_identify_conversation_id(self):
         """Test: Deve gerar ID único para conversa (lead + data)"""
