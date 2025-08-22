@@ -88,5 +88,5 @@ class TerminalDisplay:
     def show_all_metrics(self):
         """Mostra todas as métricas (L1 + L2)"""
         self.show_l1_metrics()
-        logger.info("")  # Espaço entre métricas
+        print("")  # Espaço entre métricas
         self.show_l2_metrics()

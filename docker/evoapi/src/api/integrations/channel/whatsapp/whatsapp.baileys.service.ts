@@ -3780,6 +3780,17 @@ export class BaileysStartupService extends ChannelStartupService {
 
   private async formatUpdateMessage(data: UpdateMessageDto) {
     try {
+      if (data.media && data.mediatype) {
+        const { message } = await this.prepareMediaMessage({
+          mediatype: data.mediatype,
+          media: data.media,
+          mimetype: data.mimetype,
+          fileName: data.fileName,
+          caption: data.text,
+        });
+        return message;
+      }
+
       const msg: any = await this.getMessage(data.key, true);
 
       if (msg?.messageType === 'conversation' || msg?.messageType === 'extendedTextMessage') {
@@ -3803,6 +3814,10 @@ export class BaileysStartupService extends ChannelStartupService {
 
   public async updateMessage(data: UpdateMessageDto) {
     const jid = createJid(data.number);
+
+    if (!data.text && !data.media) {
+      throw new BadRequestException('text or media is required');
+    }
 
     const options = await this.formatUpdateMessage(data);
 

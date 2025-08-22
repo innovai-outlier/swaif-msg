@@ -119,3 +119,4 @@ class TestL2Grouping:
         """Test: Deve executar sem erro com lista vazia"""
         self.grouper._mark_messages_processed([])
         assert True
+
