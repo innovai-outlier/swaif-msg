@@ -13,13 +13,11 @@ help:
 	@echo "  make update-deps - Update requirements.txt"
 
 install:
-        pip install -e .
-        pip install -r requirements.txt
+	pip install -r requirements.txt
 
 install-dev:
-        pip install -e .
-        pip install -r requirements.txt
-        pip install black flake8 mypy pre-commit
+	pip install -r requirements.txt
+	pip install black flake8 mypy pre-commit
 
 test:
 	pytest depths/tests/ -v --cov=depths

@@ -12,10 +12,10 @@ class SwaifDatabase:
             # pois :memory: não persiste entre conexões
             import tempfile
             import os
-            fd, self._temp_db = tempfile.mkstemp(suffix=".db")
+            fd, temp_path = tempfile.mkstemp(suffix=".db")
             os.close(fd)  # Fechar o file descriptor, usar apenas o path
-            self._temp_db = True
-            self.db_path = self._temp_db
+            self.db_path = temp_path
+            self._temp_db = temp_path  # Guardar o caminho para cleanup
         else:
             self.db_path = Path(db_path)
             self.db_path.parent.mkdir(exist_ok=True)
@@ -23,14 +23,12 @@ class SwaifDatabase:
     
     def cleanup(self):
         """Remove arquivo temporário (para testes)"""
-        if getattr(self, "_temp_db", False):
+        if self._temp_db:
             import os
             try:
-                os.unlink(self.db_path)
+                os.unlink(self._temp_db)
             except (FileNotFoundError, PermissionError):
                 pass
-        if self._temp_db:
-            Path(self._temp_db).unlink(missing_ok=True)
     
     def _init_tables(self):
         """Cria tabelas L1, L2, L3"""
