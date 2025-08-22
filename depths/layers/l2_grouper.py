@@ -10,13 +10,15 @@ logger = logging.getLogger(__name__)
 
 class L2Grouper:
     """Agrupa mensagens L1 em conversas L2"""
-    
-    def __init__(self, database=None):
+
+    def __init__(self, database=None, secretary_phone: str = "clinic_secretary"):
         if database:
             self.db = database
         else:
             from depths.core.database import SwaifDatabase
             self.db = SwaifDatabase()
+
+        self.secretary_phone = self._clean_phone(secretary_phone)
     
     def generate_conversation_id(self, lead_phone: str, timestamp: str) -> str:
         """Gera ID único: lead_phone + data"""
@@ -52,7 +54,7 @@ class L2Grouper:
         if sender_clean is None:
             return {
                 "lead_phone": receiver_clean,
-                "secretary_phone": "clinic_secretary",  # Número da clínica
+                "secretary_phone": self.secretary_phone,
                 "sender_type": "secretary"
             }
         else:

@@ -1,6 +1,3 @@
-#import pytest
-from datetime import datetime, timedelta
-from pathlib import Path
 from depths.core.database import SwaifDatabase
 from depths.layers.l2_grouper import L2Grouper
 
@@ -12,8 +9,6 @@ class TestL2Grouping:
         self.grouper = L2Grouper(self.db)
 
     def teardown_method(self):
-        db_path = self.db.db_path
-        self.db.cleanup()
         self.db.cleanup()
         
     def test_identify_conversation_id(self):
@@ -128,6 +123,31 @@ class TestL2Grouping:
         assert result["lead_phone"] == "5511999887766"
         assert result["secretary_phone"] == "5511998681314"
         assert result["sender_type"] == "lead"
+
+    def test_custom_secretary_phone(self):
+        """Test: Deve aceitar número de secretária customizado"""
+        custom_phone = "551100000000"
+        grouper = L2Grouper(self.db, secretary_phone=custom_phone)
+
+        self.db.insert_l1_message(
+            {
+                "host_n8n": "test",
+                "evo_api_instance_name": "test",
+                "host_evoapi": "test",
+                "sender_raw_data": None,
+                "receiver_raw_data": "5511999887766@s.whatsapp.net",
+                "message_type": "conversation",
+                "sent_message": "Olá",
+                "timestamp": "2025-01-14T10:00:00.000Z",
+            }
+        )
+
+        conversations = grouper.process_pending_messages()
+
+        assert len(conversations) == 1
+        assert conversations[0]["secretary_phone"] == custom_phone
+        assert conversations[0]["lead_phone"] == "5511999887766"
+        assert conversations[0]["message_count"] == 1
 
     def test_mark_messages_processed_empty(self):
         """Test: Deve executar sem erro com lista vazia"""

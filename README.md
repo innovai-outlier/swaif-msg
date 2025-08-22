@@ -87,6 +87,14 @@ make install
 make test
 ```
 
+Exemplo de uso do L2 Grouper com número de secretária customizado:
+
+```python
+from depths.layers.l2_grouper import L2Grouper
+
+grouper = L2Grouper(secretary_phone="5511998681314")
+```
+
 ---
 
 *SWAIF-MSG - Transformando conversas em insights, liberando tempo para o cuidado humano.*
