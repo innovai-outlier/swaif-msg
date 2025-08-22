@@ -77,6 +77,15 @@ class SwaifDatabase:
                 )
             """)
 
+            # Atividade por lead
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS lead_activity (
+                    lead_phone TEXT PRIMARY KEY,
+                    last_activity DATETIME,
+                    conversation_id TEXT
+                )
+            """)
+            
             # L3 - Análises IA
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS analyses_l3 (

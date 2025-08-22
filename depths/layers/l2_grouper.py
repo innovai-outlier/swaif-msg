@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from collections import defaultdict
 import logging
@@ -10,36 +10,52 @@ logger = logging.getLogger(__name__)
 
 class L2Grouper:
     """Agrupa mensagens L1 em conversas L2"""
-    
-    def __init__(self, database=None):
+
+    def __init__(self, database=None, tolerance_hours: int = 4):
         if database:
             self.db = database
         else:
             from depths.core.database import SwaifDatabase
             self.db = SwaifDatabase()
+        self.tolerance = timedelta(hours=tolerance_hours)
     
     def generate_conversation_id(self, lead_phone: str, timestamp: str) -> str:
-        """Gera ID único: lead_phone + data"""
-        # Parse timestamp para extrair data
+        """Gera ID considerando janela de tolerância"""
         if isinstance(timestamp, str):
             # Usar python-dateutil que é mais robusto e compatível
             try:
-                from dateutil.parser import parse as dateutil_parse
                 dt = dateutil_parse(timestamp)
             except ImportError:
-                # Fallback manual para formato ISO comum
-                # Remove 'Z' e microsegundos se existir
                 clean_timestamp = timestamp.replace('Z', '').split('.')[0]
                 dt = datetime.strptime(clean_timestamp, '%Y-%m-%dT%H:%M:%S')
         else:
             dt = timestamp
-            
-        date_str = dt.strftime('%Y-%m-%d')
-        
-        # Limpar número do telefone
+
         clean_phone = lead_phone.replace('@s.whatsapp.net', '').strip()
-        
-        return f"{clean_phone}_{date_str}"
+
+        with sqlite3.connect(self.db.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT last_activity, conversation_id FROM lead_activity WHERE lead_phone = ?",
+                (clean_phone,),
+            ).fetchone()
+
+            if row:
+                last_activity = dateutil_parse(row["last_activity"])
+                if dt - last_activity <= self.tolerance:
+                    conversation_id = row["conversation_id"]
+                else:
+                    conversation_id = f"{clean_phone}_{dt.strftime('%Y-%m-%d')}"
+            else:
+                conversation_id = f"{clean_phone}_{dt.strftime('%Y-%m-%d')}"
+
+            conn.execute(
+                "INSERT OR REPLACE INTO lead_activity (lead_phone, last_activity, conversation_id) VALUES (?, ?, ?)",
+                (clean_phone, dt.isoformat(), conversation_id),
+            )
+            conn.commit()
+
+        return conversation_id
     
     def identify_participants(self, sender: Optional[str], receiver: str) -> Dict:
         """Identifica lead e secretária na conversa"""
