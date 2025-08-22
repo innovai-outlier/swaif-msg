@@ -178,6 +178,31 @@ class TestL2Grouping:
         assert result["secretary_phone"] == "5511998681314"
         assert result["sender_type"] == "lead"
 
+    def test_custom_secretary_phone(self):
+        """Test: Deve aceitar número de secretária customizado"""
+        custom_phone = "551100000000"
+        grouper = L2Grouper(self.db, secretary_phone=custom_phone)
+
+        self.db.insert_l1_message(
+            {
+                "host_n8n": "test",
+                "evo_api_instance_name": "test",
+                "host_evoapi": "test",
+                "sender_raw_data": None,
+                "receiver_raw_data": "5511999887766@s.whatsapp.net",
+                "message_type": "conversation",
+                "sent_message": "Olá",
+                "timestamp": "2025-01-14T10:00:00.000Z",
+            }
+        )
+
+        conversations = grouper.process_pending_messages()
+
+        assert len(conversations) == 1
+        assert conversations[0]["secretary_phone"] == custom_phone
+        assert conversations[0]["lead_phone"] == "5511999887766"
+        assert conversations[0]["message_count"] == 1
+
     def test_mark_messages_processed_empty(self):
         """Test: Deve executar sem erro com lista vazia"""
         self.grouper._mark_messages_processed([])
