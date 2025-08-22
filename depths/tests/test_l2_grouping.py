@@ -1,3 +1,7 @@
+import pytest
+import logging
+import sqlite3
+import builtins
 from datetime import datetime, timedelta
 from depths.core.database import SwaifDatabase
 from depths.layers.l2_grouper import L2Grouper
@@ -69,6 +73,17 @@ class TestL2Grouping:
         assert len(conversations) == 1
         assert conversations[0]["message_count"] == 3
         assert conversations[0]["lead_phone"] == "5511999887766"
+
+        # Histórico deve conter as mensagens salvas
+        history = self.db.get_conversation_history(conversations[0]["conversation_id"])
+        assert len(history) == 3
+        assert [m["content"] for m in history] == [
+            "Olá, gostaria de agendar",
+            "Para amanhã seria possível?",
+            "Sim, temos horário às 14h",
+        ]
+        assert history[0]["sender_type"] == "lead"
+        assert history[-1]["sender_type"] == "secretary"
 
     def test_separate_conversations_different_days(self):
         """Test: Deve separar conversas de dias diferentes"""
@@ -167,3 +182,100 @@ class TestL2Grouping:
         """Test: Deve executar sem erro com lista vazia"""
         self.grouper._mark_messages_processed([])
         assert True
+
+    def test_process_pending_messages_no_messages(self, caplog):
+        """Test: Deve retornar lista vazia quando não há mensagens pendentes"""
+        with caplog.at_level(logging.INFO):
+            result = self.grouper.process_pending_messages()
+        assert result == []
+        assert "No pending messages to group" in caplog.text
+
+    def test_clean_phone_empty(self):
+        """Test: Deve limpar telefone vazio"""
+        assert self.grouper._clean_phone(None) == ""
+
+    def test_save_conversation_existing_updates(self):
+        """Test: Deve atualizar conversa existente"""
+        conv_data = {
+            "conversation_id": "123_2025-01-14",
+            "lead_phone": "123",
+            "secretary_phone": "sec",
+            "message_count": 1,
+            "start_time": datetime(2025, 1, 14, 10, 0, 0),
+            "end_time": datetime(2025, 1, 14, 10, 0, 0),
+            "messages": [
+                {
+                    "sender_phone": "123@s.whatsapp.net",
+                    "receiver_phone": "sec@s.whatsapp.net",
+                    "content": "hi",
+                    "timestamp": datetime(2025, 1, 14, 10, 0, 0),
+                }
+            ],
+        }
+        row_id = self.grouper._save_conversation(conv_data)
+        assert row_id is not None
+
+        conv_update = {
+            "conversation_id": "123_2025-01-14",
+            "lead_phone": "123",
+            "secretary_phone": "sec",
+            "message_count": 1,
+            "start_time": datetime(2025, 1, 14, 10, 0, 0),
+            "end_time": datetime(2025, 1, 14, 10, 10, 0),
+            "messages": [
+                {
+                    "sender_phone": None,
+                    "receiver_phone": "123@s.whatsapp.net",
+                    "content": "reply",
+                    "timestamp": datetime(2025, 1, 14, 10, 10, 0),
+                }
+            ],
+        }
+        row_id2 = self.grouper._save_conversation(conv_update)
+        assert row_id2 == row_id
+
+        with sqlite3.connect(self.db.db_path) as conn:
+            data = conn.execute(
+                "SELECT message_count, end_time FROM conversations_l2 WHERE conversation_id=?",
+                ("123_2025-01-14",),
+            ).fetchone()
+        assert data[0] == 2
+        assert data[1] == "2025-01-14T10:10:00"
+
+        history = self.db.get_conversation_history("123_2025-01-14")
+        assert len(history) == 2
+
+    def test_save_conversation_handles_exception(self, monkeypatch):
+        """Test: Deve retornar None se ocorrer erro ao salvar"""
+        def fail_connect(*args, **kwargs):
+            raise Exception("db error")
+        monkeypatch.setattr(sqlite3, "connect", fail_connect)
+        conv_data = {
+            "conversation_id": "x",
+            "lead_phone": "l",
+            "secretary_phone": "s",
+            "message_count": 0,
+            "start_time": datetime.now(),
+            "end_time": datetime.now(),
+            "messages": [],
+        }
+        assert self.grouper._save_conversation(conv_data) is None
+
+def test_generate_conversation_id_fallback(monkeypatch):
+    """Test: Deve usar parse manual quando dateutil não estiver disponível"""
+    real_import = builtins.__import__
+    def fake_import(name, *args, **kwargs):
+        if name == "dateutil.parser":
+            raise ImportError
+        return real_import(name, *args, **kwargs)
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    grouper = L2Grouper()
+    conv_id = grouper.generate_conversation_id("5511@s.whatsapp.net", "2025-01-14T10:30:00Z")
+    assert conv_id == "5511_2025-01-14"
+    Path(grouper.db.db_path).unlink(missing_ok=True)
+
+def test_init_without_database():
+    """Test: Instancia sem banco explícito"""
+    grouper = L2Grouper()
+    assert grouper.db is not None
+    Path(grouper.db.db_path).unlink(missing_ok=True)
