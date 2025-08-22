@@ -1,14 +1,8 @@
-#import pytest
+import pytest
 import json
 import tempfile
 from pathlib import Path
 #from datetime import datetime
-import sys
-import os
-
-# Add project root to sys.path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.insert(0, project_root)
 
 # Sample data do seu json_test.json
 SAMPLE_L1_JSON = [{
@@ -42,6 +36,28 @@ class TestL1Ingestion:
         
         # Cleanup
         Path(temp_path).unlink()
+
+    def test_read_json_file_missing(self):
+        """Test: Deve retornar lista vazia para arquivo inexistente"""
+        from depths.layers.l1_ingestion import L1Ingestion
+
+        ingestion = L1Ingestion()
+        data = ingestion.read_json_file("arquivo_que_nao_existe.json")
+        assert data == []
+
+    def test_read_json_file_malformed(self):
+        """Test: Deve relançar erro para JSON malformado"""
+        from depths.layers.l1_ingestion import L1Ingestion
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            f.write("{invalid json}")
+            temp_path = f.name
+
+        ingestion = L1Ingestion()
+        with pytest.raises(ValueError):
+            ingestion.read_json_file(temp_path)
+
+        Path(temp_path).unlink()
     
     def test_store_l1_to_database(self):
         """Test: Deve armazenar L1 no SQLite"""
@@ -51,12 +67,13 @@ class TestL1Ingestion:
         
         db = SwaifDatabase(":memory:")  # In-memory for tests
         ingestion = L1Ingestion(database=db)
-        
+        db_path = db.db_path
+
         try:
             # Act
             result = ingestion.process_l1_data(SAMPLE_L1_JSON[0])
-            
-            # Assert  
+
+            # Assert
             assert result["status"] == "stored"
             assert result["message_id"] is not None
         finally:
@@ -73,9 +90,61 @@ class TestL1Ingestion:
             # Act - criar arquivo após iniciar monitor
             test_file = Path(tmpdir) / "test_msg.json"
             test_file.write_text(json.dumps(SAMPLE_L1_JSON))
-            
+
             detected_files = ingestion.scan_folder(tmpdir)
-            
+
             # Assert
             assert len(detected_files) == 1
             assert "test_msg.json" in str(detected_files[0])
+
+    def test_process_l1_data_error(self, monkeypatch):
+        """Test: Deve retornar erro quando falhar ao armazenar L1"""
+        from depths.layers.l1_ingestion import L1Ingestion
+        from depths.core.database import SwaifDatabase
+
+        db = SwaifDatabase(":memory:")
+        ingestion = L1Ingestion(database=db)
+
+        def fail_insert(_):
+            raise Exception("fail")
+
+        monkeypatch.setattr(ingestion.db, "insert_l1_message", fail_insert)
+        result = ingestion.process_l1_data(SAMPLE_L1_JSON[0])
+        assert result["status"] == "error"
+        assert "fail" in result["error"]
+
+    def test_monitor_continuous_keyboard_interrupt(self, monkeypatch):
+        """Test: Deve encerrar loop quando ocorrer KeyboardInterrupt"""
+        from depths.layers import l1_ingestion
+
+        ingestion = l1_ingestion.L1Ingestion()
+        monkeypatch.setattr(ingestion, "scan_folder", lambda: [Path("msg.json")])
+        monkeypatch.setattr(ingestion, "read_json_file", lambda path: SAMPLE_L1_JSON)
+        processed = []
+        monkeypatch.setattr(ingestion, "process_l1_data", lambda msg: processed.append(msg))
+
+        def raise_keyboard(*_, **__):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr(l1_ingestion.time, "sleep", raise_keyboard)
+        ingestion.monitor_continuous(interval=0)
+        assert processed
+
+    def test_monitor_continuous_exception(self, monkeypatch):
+        """Test: Deve capturar exceções genéricas e continuar"""
+        from depths.layers import l1_ingestion
+
+        ingestion = l1_ingestion.L1Ingestion()
+
+        def fail_scan():
+            raise ValueError("boom")
+
+        monkeypatch.setattr(ingestion, "scan_folder", fail_scan)
+
+        def raise_keyboard(*_, **__):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr(l1_ingestion.time, "sleep", raise_keyboard)
+
+        with pytest.raises(KeyboardInterrupt):
+            ingestion.monitor_continuous(interval=0)

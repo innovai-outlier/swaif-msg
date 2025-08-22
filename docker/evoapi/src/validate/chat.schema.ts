@@ -146,6 +146,10 @@ export const updateMessageSchema: JSONSchema7 = {
   properties: {
     number: { type: 'string' },
     text: { type: 'string' },
+    media: { type: 'string' },
+    mediatype: { type: 'string', enum: ['image', 'document', 'video', 'audio', 'ptv'] },
+    mimetype: { type: 'string' },
+    fileName: { type: 'string' },
     key: {
       type: 'object',
       properties: {
@@ -157,7 +161,8 @@ export const updateMessageSchema: JSONSchema7 = {
       ...isNotEmpty('id', 'remoteJid'),
     },
   },
-  ...isNotEmpty('number', 'text', 'key'),
+  required: ['number', 'key'],
+  ...isNotEmpty('number', 'key'),
 };
 
 export const presenceSchema: JSONSchema7 = {

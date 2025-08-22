@@ -1,12 +1,14 @@
 # SWAIF-MSG Makefile
-.PHONY: help install install-dev test run-depths clean update-deps
+.PHONY: help install install-dev test clean update-deps run-monitor run-pipe run-metrics
 
 help:
 	@echo "SWAIF-MSG Commands:"
 	@echo "  make install      - Install production dependencies"
 	@echo "  make install-dev  - Install all dependencies (including dev)"
 	@echo "  make test        - Run tests"
-	@echo "  make run-depths  - Start depths monitor"
+	@echo "  make run-monitor - Start L1 monitor"
+	@echo "  make run-pipe    - Run full pipeline (L1 -> L2)"
+	@echo "  make run-metrics - Show all metrics"
 	@echo "  make clean       - Clean cache files"
 	@echo "  make update-deps - Update requirements.txt"
 
@@ -28,9 +30,6 @@ run-pipe:
 
 run-metrics:
 	python depths/run_depths.py --metrics
-
-run-display:
-	python depths/run_depths.py --display
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
