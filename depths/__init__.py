@@ -5,7 +5,7 @@ SWAIF-MSG Depths Layer
 Camada de processamento local com análise de dados e IA.
 
 Módulos:
-- core/: Database, terminal_display  
+- core/: Database, terminal_display
 - layers/: L1 (ingestion), L2 (analytics), L3 (IA)
 - tests/: Testes automatizados
 """

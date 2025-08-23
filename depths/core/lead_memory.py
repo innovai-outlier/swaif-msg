@@ -6,12 +6,13 @@ memória e recuperar o histórico posteriormente.
 from __future__ import annotations
 
 import sqlite3
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Union
+from pathlib import Path
 from dateutil.parser import parse as dateutil_parse
 
 # Caminho do banco de dados utilizado pelo serviço.
 # Deve ser ajustado pela camada que o utiliza.
-DB_PATH: str | None = None
+DB_PATH: Union[str, Path, None] = None
 
 # Armazena historico em memória durante a execução do processo.
 _MEMORY: Dict[str, List[Dict[str, Any]]] = {}
@@ -36,11 +37,18 @@ def save_conversation(conversation_id: str) -> None:
         except Exception:
             return
 
+    if DB_PATH is None:
+        return
+
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
 
         conv = conn.execute(
-            "SELECT lead_phone, start_time, end_time FROM conversations_l2 WHERE conversation_id = ?",
+            """
+            SELECT lead_phone, start_time, end_time
+            FROM conversations_l2
+            WHERE conversation_id = ?
+            """,
             (conversation_id,),
         ).fetchone()
         if not conv:
@@ -72,6 +80,7 @@ def save_conversation(conversation_id: str) -> None:
         _MEMORY.setdefault(lead_phone, []).append(
             {"conversation_id": conversation_id, "messages": messages}
         )
+
 
 def load_history(lead_phone: str) -> List[Dict[str, Any]]:
     """Retorna histórico de conversas de um lead."""

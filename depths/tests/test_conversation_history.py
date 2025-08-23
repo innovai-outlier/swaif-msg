@@ -53,9 +53,10 @@ def test_conversation_history_persistence_and_message_processing(tmp_path):
     assert history[1]["sender_type"] == "secretary"
 
     with sqlite3.connect(db_file) as conn:
-        processed = [row[0] for row in conn.execute("SELECT processed FROM messages_l1")]
+        processed = [
+            row[0] for row in conn.execute("SELECT processed FROM messages_l1")
+        ]
         assert all(processed)
 
     db.cleanup()
     db2.cleanup()
-

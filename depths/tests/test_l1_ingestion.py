@@ -2,38 +2,42 @@ import pytest
 import json
 import tempfile
 from pathlib import Path
-#from datetime import datetime
+
+# from datetime import datetime
 
 # Sample data do seu json_test.json
-SAMPLE_L1_JSON = [{
-    "host_n8n": "host.docker.internal:5678",
-    "evo_api_instance_name": "WAP_Diego-Menescal",
-    "host_evoapi": "http://localhost:8080",
-    "sender_raw_data": None,
-    "receiver_raw_data": "5511998681314@s.whatsapp.net",
-    "message_type": "conversation",
-    "sent_message": "Teste",
-    "timestamp": "2025-08-20T17:44:23.965Z"
-}]
+SAMPLE_L1_JSON = [
+    {
+        "host_n8n": "host.docker.internal:5678",
+        "evo_api_instance_name": "WAP_Diego-Menescal",
+        "host_evoapi": "http://localhost:8080",
+        "sender_raw_data": None,
+        "receiver_raw_data": "5511998681314@s.whatsapp.net",
+        "message_type": "conversation",
+        "sent_message": "Teste",
+        "timestamp": "2025-08-20T17:44:23.965Z",
+    }
+]
+
 
 class TestL1Ingestion:
-    
     def test_read_json_file(self):
         """Test: Deve ler arquivo JSON do N8N"""
         # Arrange
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(SAMPLE_L1_JSON, f)
             temp_path = f.name
-        
+
         # Act
         from depths.layers.l1_ingestion import L1Ingestion
+
         ingestion = L1Ingestion()
         data = ingestion.read_json_file(temp_path)
-        
+
         # Assert
         assert len(data) == 1
         assert data[0]["sent_message"] == "Teste"
-        
+
         # Cleanup
         Path(temp_path).unlink()
 
@@ -49,7 +53,7 @@ class TestL1Ingestion:
         """Test: Deve relançar erro para JSON malformado"""
         from depths.layers.l1_ingestion import L1Ingestion
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("{invalid json}")
             temp_path = f.name
 
@@ -58,16 +62,15 @@ class TestL1Ingestion:
             ingestion.read_json_file(temp_path)
 
         Path(temp_path).unlink()
-    
+
     def test_store_l1_to_database(self):
         """Test: Deve armazenar L1 no SQLite"""
         # Arrange
         from depths.core.database import SwaifDatabase
         from depths.layers.l1_ingestion import L1Ingestion
-        
+
         db = SwaifDatabase(":memory:")  # In-memory for tests
         ingestion = L1Ingestion(database=db)
-        db_path = db.db_path
 
         try:
             # Act
@@ -79,14 +82,15 @@ class TestL1Ingestion:
         finally:
             # Cleanup
             db.cleanup()
-        
+
     def test_monitor_folder(self):
         """Test: Deve detectar novos arquivos JSON"""
         # Arrange
         with tempfile.TemporaryDirectory() as tmpdir:
             from depths.layers.l1_ingestion import L1Ingestion
+
             ingestion = L1Ingestion()
-            
+
             # Act - criar arquivo após iniciar monitor
             test_file = Path(tmpdir) / "test_msg.json"
             test_file.write_text(json.dumps(SAMPLE_L1_JSON))
@@ -121,7 +125,9 @@ class TestL1Ingestion:
         monkeypatch.setattr(ingestion, "scan_folder", lambda: [Path("msg.json")])
         monkeypatch.setattr(ingestion, "read_json_file", lambda path: SAMPLE_L1_JSON)
         processed = []
-        monkeypatch.setattr(ingestion, "process_l1_data", lambda msg: processed.append(msg))
+        monkeypatch.setattr(
+            ingestion, "process_l1_data", lambda msg: processed.append(msg)
+        )
 
         def raise_keyboard(*_, **__):
             raise KeyboardInterrupt

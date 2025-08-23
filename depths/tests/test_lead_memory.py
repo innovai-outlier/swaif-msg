@@ -30,9 +30,21 @@ class TestLeadMemory:
         )
 
     def test_save_and_load_history(self):
-        self._insert_msg("5511999887766@s.whatsapp.net", "5511998681314@s.whatsapp.net", "Oi", "2025-01-14T10:00:00.000Z")
-        self._insert_msg("5511999887766@s.whatsapp.net", "5511998681314@s.whatsapp.net", "Tudo bem?", "2025-01-14T10:05:00.000Z")
-        self._insert_msg(None, "5511999887766@s.whatsapp.net", "Olá!", "2025-01-14T10:10:00.000Z")
+        self._insert_msg(
+            "5511999887766@s.whatsapp.net",
+            "5511998681314@s.whatsapp.net",
+            "Oi",
+            "2025-01-14T10:00:00.000Z",
+        )
+        self._insert_msg(
+            "5511999887766@s.whatsapp.net",
+            "5511998681314@s.whatsapp.net",
+            "Tudo bem?",
+            "2025-01-14T10:05:00.000Z",
+        )
+        self._insert_msg(
+            None, "5511999887766@s.whatsapp.net", "Olá!", "2025-01-14T10:10:00.000Z"
+        )
 
         self.grouper.process_pending_messages()
 
