@@ -279,10 +279,10 @@ class SaidaRepo:
                 """
                 INSERT INTO saida
                     (data_saida, codigo, quantidade_raw, lote, data_validade,
-                     custo, paciente, responsavel, descarte_flag)
+                     custo, paciente, produto, descarte_flag)
                 VALUES
                     (:data_saida, :codigo, :quantidade_raw, :lote, :data_validade,
-                     :custo, :paciente, :responsavel, :descarte_flag)
+                     :custo, :paciente, :produto, :descarte_flag)
                 """,
                 row,
             )
@@ -296,10 +296,10 @@ class SaidaRepo:
                 """
                 INSERT INTO saida
                     (data_saida, codigo, quantidade_raw, lote, data_validade,
-                     custo, paciente, responsavel, descarte_flag)
+                     custo, paciente, produto, descarte_flag)
                 VALUES
                     (:data_saida, :codigo, :quantidade_raw, :lote, :data_validade,
-                     :custo, :paciente, :responsavel, :descarte_flag)
+                     :custo, :paciente, :produto, :descarte_flag)
                 """,
                 rows,
             )

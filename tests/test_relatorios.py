@@ -134,7 +134,7 @@ def _seed_saidas_para_demanda(db_path):
             "data_validade": None,
             "custo": None,
             "paciente": None,
-            "responsavel": "user",
+            "produto": "Produto Fracionado",
             "descarte_flag": 0,
         })
 
@@ -148,7 +148,7 @@ def _seed_saidas_para_demanda(db_path):
             "data_validade": None,
             "custo": None,
             "paciente": None,
-            "responsavel": "user",
+            "produto": "Produto Dose Única",
             "descarte_flag": 0,
         })
 
