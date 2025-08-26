@@ -10,3 +10,4 @@ DB_PATH = "estoque.db"
 
 # Valores padrão dos parâmetros globais
 DEFAULTS = Params()
+

@@ -50,7 +50,7 @@ def run_saida_unica(db_path: str = DB_PATH) -> Dict[str, Any]:
     data_validade = input("Data de validade (opcional): ").strip()
     custo         = input("Custo (opcional): ").strip()
     paciente      = input("Paciente (opcional): ").strip()
-    responsavel   = input("Responsável (opcional): ").strip()
+    produto       = input("Nome do produto (opcional): ").strip()
     descarte      = input("É descarte? (0/1, sim/nao, true/false) [opcional]: ").strip()
 
     rec = {
@@ -61,7 +61,7 @@ def run_saida_unica(db_path: str = DB_PATH) -> Dict[str, Any]:
         "data_validade": _normalize_str(data_validade),
         "custo":         _normalize_str(custo),
         "paciente":      _normalize_str(paciente),
-        "responsavel":   _normalize_str(responsavel),
+        "produto":       _normalize_str(produto),
         "descarte_flag": _to_bool01(descarte) if descarte else None,
     }
     repo = SaidaRepo(db_path)
