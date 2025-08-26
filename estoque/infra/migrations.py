@@ -8,6 +8,7 @@ V2: adiciona colunas numéricas e de unidade no snapshot de lotes
 
 from __future__ import annotations
 
+
 from typing import List
 from .db import connect
 

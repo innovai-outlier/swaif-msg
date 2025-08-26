@@ -1,18 +1,13 @@
 # estoque/config.py
 """
-Configurações gerais do sistema de estoque.
+Configurações globais do sistema de estoque.
 """
 
-from dataclasses import dataclass
+from estoque.domain.models import Params
 
-# Path padrão do banco SQLite
-DB_PATH = "data/estoque.db"
+# Caminho padrão do banco de dados SQLite
+DB_PATH = "estoque.db"
 
-@dataclass
-class DefaultConfig:
-    """Configurações padrão do sistema."""
-    nivel_servico: float = 0.95
-    mu_t_dias_uteis: float = 7.0
-    sigma_t_dias_uteis: float = 2.0
+# Valores padrão dos parâmetros globais
+DEFAULTS = Params()
 
-DEFAULTS = DefaultConfig()
