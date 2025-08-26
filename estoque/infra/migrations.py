@@ -9,7 +9,7 @@ V2: adiciona colunas numéricas e de unidade no snapshot de lotes
 from __future__ import annotations
 
 from typing import List
-from db import connect
+from .db import connect
 
 
 SCHEMA_V1: List[str] = [
@@ -74,7 +74,7 @@ SCHEMA_V1: List[str] = [
         data_validade TEXT,
         custo TEXT,
         paciente TEXT,
-        responsavel TEXT,
+        produto TEXT,
         descarte_flag INTEGER,
         FOREIGN KEY (codigo) REFERENCES produto(codigo)
     );
@@ -121,6 +121,11 @@ SCHEMA_V2: List[str] = [
     # Executaremos via função auxiliar que checa presença antes.
 ]
 
+# V3: substitui responsavel por produto na tabela saida
+SCHEMA_V3: List[str] = [
+    # Migração para substituir responsavel por produto na tabela saida
+]
+
 
 def _ensure_column(conn, table: str, column: str, ddl: str) -> None:
     """Adiciona coluna se não existir."""
@@ -143,6 +148,40 @@ def _apply_v2(conn) -> None:
     _ensure_column(conn, "estoque_lote_snapshot", "qtd_unid_un", "qtd_unid_un TEXT")
 
 
+def _apply_v3(conn) -> None:
+    # Substitui responsavel por produto na tabela saida
+    # SQLite não suporta DROP COLUMN nem RENAME COLUMN em versões antigas
+    # Então vamos usar a estratégia de criar nova tabela e migrar dados
+    
+    # 1. Criar nova tabela saida com estrutura atualizada
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS saida_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data_saida TEXT,
+            codigo TEXT,
+            quantidade_raw TEXT,
+            lote TEXT,
+            data_validade TEXT,
+            custo TEXT,
+            paciente TEXT,
+            produto TEXT,
+            descarte_flag INTEGER,
+            FOREIGN KEY (codigo) REFERENCES produto(codigo)
+        )
+    """)
+    
+    # 2. Migrar dados existentes (responsavel será ignorado, produto será NULL inicialmente)
+    conn.execute("""
+        INSERT INTO saida_new (id, data_saida, codigo, quantidade_raw, lote, data_validade, custo, paciente, produto, descarte_flag)
+        SELECT id, data_saida, codigo, quantidade_raw, lote, data_validade, custo, paciente, NULL, descarte_flag
+        FROM saida
+    """)
+    
+    # 3. Remover tabela antiga e renomear nova
+    conn.execute("DROP TABLE saida")
+    conn.execute("ALTER TABLE saida_new RENAME TO saida")
+
+
 def apply_migrations(db_path: str) -> None:
     """Aplica migrações incrementais de acordo com PRAGMA user_version."""
     with connect(db_path) as conn:
@@ -158,4 +197,9 @@ def apply_migrations(db_path: str) -> None:
             conn.execute("PRAGMA user_version = 2;")
             ver = 2
 
-        # versões futuras: if ver < 3: _apply_v3(...)
+        if ver < 3:
+            _apply_v3(conn)
+            conn.execute("PRAGMA user_version = 3;")
+            ver = 3
+
+        # versões futuras: if ver < 4: _apply_v4(...)

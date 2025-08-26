@@ -39,6 +39,21 @@ def _slug(s: str) -> str:
     return s
 
 
+def _safe_get_str(row, key: str) -> Optional[str]:
+    """Safely gets a string value from a pandas row, handling NaN values."""
+    val = row.get(key)
+    if val is None or pd.isna(val):
+        return None
+    # Handle pandas string NA
+    if hasattr(val, 'isna') and val.isna():
+        return None
+    # Convert to string and check if it's meaningful
+    str_val = str(val).strip()
+    if str_val in ('', '<NA>', 'nan', 'NaN', 'None'):
+        return None
+    return str_val
+
+
 def _first_nonnull(*vals):
     for v in vals:
         if v is not None:
@@ -145,6 +160,11 @@ def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
         "descarte": "descarte_flag",
         "descarte flag": "descarte_flag",
         "descartado": "descarte_flag",
+
+        "produto": "produto",
+        "nome": "produto",
+        "nome produto": "produto",
+        "nome do produto": "produto",
     }
 
     new_cols = {}
@@ -190,14 +210,14 @@ def load_entradas_from_xlsx(path: str) -> List[Dict[str, Any]]:
         data_entrada = _first_nonnull(row.get("data_entrada"), row.get("data"))
         rec = {
             "data_entrada": _to_date_iso(data_entrada),
-            "codigo": (row.get("codigo") or None),
-            "quantidade_raw": (row.get("quantidade_raw") or None),
-            "lote": (row.get("lote") or None),
+            "codigo": _safe_get_str(row, "codigo"),
+            "quantidade_raw": _safe_get_str(row, "quantidade_raw"),
+            "lote": _safe_get_str(row, "lote"),
             "data_validade": _to_date_iso(row.get("data_validade")),
-            "valor_unitario": (row.get("valor_unitario") or None),
-            "nota_fiscal": (row.get("nota_fiscal") or None),
-            "representante": (row.get("representante") or None),
-            "responsavel": (row.get("responsavel") or None),
+            "valor_unitario": _safe_get_str(row, "valor_unitario"),
+            "nota_fiscal": _safe_get_str(row, "nota_fiscal"),
+            "representante": _safe_get_str(row, "representante"),
+            "responsavel": _safe_get_str(row, "responsavel"),
             "pago": _to_bool01(row.get("pago")),
         }
         out.append(rec)
@@ -215,7 +235,7 @@ def load_saidas_from_xlsx(path: str) -> List[Dict[str, Any]]:
       - data_validade: ISO date | None
       - custo: str | None (não convertemos para float aqui)
       - paciente: str | None
-      - responsavel: str | None
+      - produto: str | None (nome do produto)
       - descarte_flag: 0/1 | None
     """
     df = pd.read_excel(path, dtype="string")
@@ -227,13 +247,13 @@ def load_saidas_from_xlsx(path: str) -> List[Dict[str, Any]]:
         data_saida = _first_nonnull(row.get("data_saida"), row.get("data"))
         rec = {
             "data_saida": _to_date_iso(data_saida),
-            "codigo": (row.get("codigo") or None),
-            "quantidade_raw": (row.get("quantidade_raw") or None),
-            "lote": (row.get("lote") or None),
+            "codigo": _safe_get_str(row, "codigo"),
+            "quantidade_raw": _safe_get_str(row, "quantidade_raw"),
+            "lote": _safe_get_str(row, "lote"),
             "data_validade": _to_date_iso(row.get("data_validade")),
-            "custo": (row.get("custo") or None),
-            "paciente": (row.get("paciente") or None),
-            "responsavel": (row.get("responsavel") or None),
+            "custo": _safe_get_str(row, "custo"),
+            "paciente": _safe_get_str(row, "paciente"),
+            "produto": _safe_get_str(row, "produto"),
             "descarte_flag": _to_bool01(row.get("descarte_flag")),
         }
         out.append(rec)
