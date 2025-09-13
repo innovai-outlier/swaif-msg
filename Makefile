@@ -6,11 +6,19 @@ help:
 	@echo "  make install      - Install production dependencies"
 	@echo "  make install-dev  - Install all dependencies (including dev)"
 	@echo "  make test        - Run tests"
+	@echo "  make coverage    - Run tests with coverage report"
 	@echo "  make run-monitor - Start L1 monitor"
 	@echo "  make run-pipe    - Run full pipeline (L1 -> L2)"
 	@echo "  make run-metrics - Show all metrics"
 	@echo "  make clean       - Clean cache files"
 	@echo "  make update-deps - Update requirements.txt"
+	@echo "  make lint        - Run flake8 linter"
+	@echo "  make fmt         - Run black formatter"
+	@echo "  make typecheck   - Run mypy type checker"
+	@echo "  make pre-commit-install - Install git hooks"
+	@echo "  make pre-commit-run     - Run all pre-commit hooks"
+	@echo "  make test-e2e    - Run end-to-end pipeline test"
+	@echo "  make test-l2-additional - Run additional L2 tests"
 
 install:
 	pip install -r requirements.txt
@@ -21,6 +29,9 @@ install-dev:
 
 test:
 	pytest depths/tests/ -v --cov=depths
+
+coverage:
+	pytest depths/tests/ -v --cov=depths --cov-report=term-missing
 
 run-monitor:
 	python depths/run_depths.py --monitor
@@ -50,7 +61,28 @@ test-l2:
 	pytest depths/tests/test_l2_grouping.py -v
 
 test-l3:
-	pytest depths/tests/test_l3_analysis.py -v
+	pytest depths/tests/test_l3_ai.py -v
+
+test-l2-additional:
+	pytest depths/tests/test_l2_additional.py -v
+
+test-e2e:
+	pytest depths/tests/test_end_to_end.py -v
+
+lint:
+	flake8 depths
+
+fmt:
+	black depths
+
+typecheck:
+	mypy depths
+
+pre-commit-install:
+	pre-commit install
+
+pre-commit-run:
+	pre-commit run --all-files
 
 # Docker commands (surface layer)
 docker-up:
