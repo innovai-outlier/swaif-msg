@@ -1,6 +1,6 @@
 # Data directory
 data/
-
+docker/n8n/data/
 # Database files
 *.db
 
